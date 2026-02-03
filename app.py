@@ -1,6 +1,5 @@
 import streamlit as st
 from PIL import Image
-import torch
 from transformers import (
     BlipProcessor,
     BlipForConditionalGeneration,
@@ -9,10 +8,10 @@ from transformers import (
 
 st.set_page_config(page_title="Image Caption + AI Description")
 
-# ---------- Load Models ----------
+# ---------------- LOAD MODELS ----------------
 @st.cache_resource
 def load_models():
-    # Image Caption Model
+    # Image Captioning Model
     caption_processor = BlipProcessor.from_pretrained(
         "Salesforce/blip-image-captioning-base"
     )
@@ -20,11 +19,10 @@ def load_models():
         "Salesforce/blip-image-captioning-base"
     )
 
-    # Free Text Generation Model (LLM)
+    # Text Model (YOUR CURRENT MODEL – USED CORRECTLY)
     text_generator = pipeline(
-        "text-generation",
-        model="google/flan-t5-base",
-        max_new_tokens=150
+        "text2text-generation",
+        model="google/flan-t5-base"
     )
 
     return caption_processor, caption_model, text_generator
@@ -32,23 +30,40 @@ def load_models():
 
 processor, caption_model, text_generator = load_models()
 
-# ---------- Functions ----------
+# ---------------- FUNCTIONS ----------------
 def generate_caption(image):
     inputs = processor(image, return_tensors="pt")
-    output = caption_model.generate(**inputs, max_length=30)
-    return processor.decode(output[0], skip_special_tokens=True)
+    output = caption_model.generate(
+        **inputs,
+        max_length=30
+    )
+    caption = processor.decode(
+        output[0],
+        skip_special_tokens=True
+    )
+    return caption
 
 
 def generate_description(caption):
     prompt = (
-        f"Expand the following image caption into a detailed, "
-        f"clear description:\n\nCaption: {caption}\n\nDescription:"
+        "You are an AI that describes images.\n"
+        "ONLY describe what is clearly visible in the image.\n"
+        "DO NOT invent locations, history, names, or stories.\n"
+        "DO NOT mention anything not visible.\n\n"
+        f"Image caption: {caption}\n\n"
+        "Clear visual description:"
     )
-    result = text_generator(prompt)[0]["generated_text"]
-    return result.replace(prompt, "").strip()
+
+    result = text_generator(
+        prompt,
+        max_new_tokens=120,
+        do_sample=False
+    )[0]["generated_text"]
+
+    return result.strip()
 
 
-# ---------- UI ----------
+# ---------------- UI ----------------
 st.title("🖼️ Image Caption + AI Description")
 
 uploaded_file = st.file_uploader(
