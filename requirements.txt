@@ -3,6 +3,3 @@ torch
 torchvision
 transformers
 pillow
-requests
-pytesseract
-opencv-python
