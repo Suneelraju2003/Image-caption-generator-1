@@ -30,8 +30,5 @@ if uploaded_file:
     if st.button("Generate Caption"):
         inputs = processor(image, return_tensors="pt")
         output = model.generate(**inputs)
-        caption = processor.decode(
-            output[0],
-            skip_special_tokens=True
-        )
+        caption = processor.decode(output[0], skip_special_tokens=True)
         st.success(f"📝 {caption}")
